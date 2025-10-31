@@ -16,17 +16,21 @@ Data formats are crucial in IoT to **exchange, store, and process information** 
 }
 ```
 ### Nested Jason
+```json
 {
   "device_id": "ESP32_1",
   "location": {"room": "lab1", "floor": 2},
   "sensors": {"temp": 27.5, "humidity": 55}
 }
+```
 
 ### How this nested data will appear:-
+``` python_output
 data = json.loads(payload)
 room = data["location"]["room"]
 temp = data["sensors"]["temp"]
 print(f"Room: {room} | Temperature: {temp}")
+```
 
 ### Why JSON in IoT?
 - Ideal for sending **sensor readings**.
