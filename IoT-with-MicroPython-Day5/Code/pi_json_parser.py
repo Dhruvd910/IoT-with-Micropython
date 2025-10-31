@@ -1,35 +1,38 @@
-# pi_json_parser.py
-import json
-import csv
-import time
-import sys
+import paho.mqtt.client as mqtt
+import json, csv, time
 
-csv_file = "data_log.csv"
+BROKER = "localhost"
+TOPIC = "iot/jsondata"
+CSV_FILE = "sensor_log.csv"
 
-# Prepare CSV file with headers
-with open(csv_file, "w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow(["timestamp", "temperature", "humidity"])
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("✅ Connected to MQTT Broker")
+        client.subscribe(TOPIC)
+        print(f"🔊 Subscribed to: {TOPIC}")
+    else:
+        print("❌ Failed to connect")
 
-print("Listening for JSON input...")
+def on_message(client, userdata, msg):
+    data = msg.payload.decode()
+    parsed = json.loads(data)
+    
+    # Extract fields
+    ts = parsed["timestamp"]
+    temp = parsed["temperature"]
+    hum = parsed["humidity"]
 
-try:
-    while True:
-        # Simulate receiving JSON from ESP32 (in practice, read from serial)
-        json_input = input("Enter JSON data: ")
-        try:
-            data = json.loads(json_input)
-            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-            temperature = data.get("temperature")
-            humidity = data.get("humidity")
+    print(f"📩 Time: {ts} | Temp: {temp} | Humidity: {hum}")
 
-            with open(csv_file, "a", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([timestamp, temperature, humidity])
+    # Log to CSV
+    with open(CSV_FILE, "a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([ts, temp, hum])
 
-            print(f"Logged -> Temp: {temperature}°C, Humidity: {humidity}%")
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_message = on_message
+client.connect(BROKER, 1883, 60)
 
-        except json.JSONDecodeError:
-            print("Invalid JSON received!")
-except KeyboardInterrupt:
-    print("\nExiting...")
+print("🕓 Waiting for JSON data... (Ctrl+C to stop)")
+client.loop_forever()
