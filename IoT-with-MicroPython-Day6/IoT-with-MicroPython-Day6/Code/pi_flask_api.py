@@ -1,35 +1,52 @@
-# pi_flask_api.py
 from flask import Flask, request, jsonify
-import sqlite3
-import time
+import sqlite3, time
 
 app = Flask(__name__)
 
-DB = "iot_data.db"
+# ---- Create Database if not exist ----
+def init_db():
+    conn = sqlite3.connect("iot_data.db")
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS sensor_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device TEXT,
+            temperature REAL,
+            humidity REAL,
+            timestamp REAL
+        )
+    """)
+    conn.commit()
+    conn.close()
 
-@app.route('/data', methods=['POST'])
+# ---- Home route ----
+@app.route('/')
+def home():
+    return "🌐 Flask REST API is running!"
+
+# ---- API Endpoint to receive sensor data ----
+@app.route('/sensor', methods=['POST'])
 def receive_data():
-    try:
-        data = request.get_json()
-        temperature = data.get('temperature')
-        humidity = data.get('humidity')
-        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    data = request.get_json()  # Parse JSON from client
+    device = data.get("device")
+    temperature = data.get("temperature")
+    humidity = data.get("humidity")
+    timestamp = time.time()
 
-        # Store in SQLite
-        conn = sqlite3.connect(DB)
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO sensor_data (temperature, humidity, timestamp) VALUES (?, ?, ?)",
-                       (temperature, humidity, timestamp))
-        conn.commit()
-        conn.close()
+    # Save into SQLite
+    conn = sqlite3.connect("iot_data.db")
+    c = conn.cursor()
+    c.execute("INSERT INTO sensor_data (device, temperature, humidity, timestamp) VALUES (?, ?, ?, ?)",
+              (device, temperature, humidity, timestamp))
+    conn.commit()
+    conn.close()
 
-        return jsonify({"status": "success", "message": "Data stored successfully"}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+    print(f"📩 Received from {device}: Temp={temperature}, Humidity={humidity}")
 
-@app.route('/status', methods=['GET'])
-def status():
-    return jsonify({"status": "running", "time": time.strftime('%Y-%m-%d %H:%M:%S')})
+    # Return a JSON response
+    return jsonify({"status": "success", "device": device, "stored_at": timestamp}), 200
 
+# ---- Run server ----
 if __name__ == '__main__':
+    init_db()
     app.run(host='0.0.0.0', port=5000)
