@@ -1,3 +1,0 @@
-# Practical – Filtering, Aggregation, Outlier Detection
-
-Step-by-step experiments...
