@@ -1,0 +1,3 @@
+# Day 7 – Edge vs Cloud; Local Filtering
+
+This file contains detailed theory...
