@@ -1,0 +1,3 @@
+# Assignments – Moving Average & Anomaly Detection
+
+All assignment details...
